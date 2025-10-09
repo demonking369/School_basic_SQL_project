@@ -2,7 +2,7 @@ import tkinter as tk
 import mysql.connector as sql
 from tkinter import ttk 
 import subprocess as sub
-import sys, re
+import sys
 mycon = None
 database1= None
 Table1= None
@@ -135,37 +135,29 @@ def table(name):
         curser = mycon.cursor()
         if x == 1:
             try:
-                #curser.execute(f'Create database {entered_name};')
-                result = sub.run([sys.executable,'test.py'],capture_output=True,text=True, timeout=300)
-                stderr = result.stderr.strip()
-                output = result.stdout.strip()
-                print("Return code:", output)
-                if result.returncode != 0:
-                    print("GUI exited with error, rc:", result.returncode)
-                    print("stderr:", stderr)
-                else:
-                    print("GUI produced:")
-                    print(result.stdout)
-                    curser.execute(f'Use {name};')
-                    curser.execute(result.stderr)   # this is the SQL or custom query
-                
+                print(name)
+                curser.execute(f'use {name};')
+                result = sub.run([sys.executable,'SQL_Creator.py'],capture_output=True,text=True, timeout=300)
+                stderr = result.stdout
+                curser.execute(f'Use {name};')
+                curser.execute(stderr)   # this is the SQL or custom query
             except:
-                temp1.config(text=' May be name is already taken Please check again and make sure name do not already exist in database.',fg='Red')
+                print('Some error occured')
         elif x == 2 :
             entered_name=name.get().strip()
             try:
-                curser.execute(f'Drop Database {entered_name}')
+                curser.execute(f'Drop table {entered_name};')
                 print(entered_name)
-                temp1.config(text=f'Successfully remove the database:{entered_name}',fg='Green')
+                temp1.config(text=f'Successfully remove the table:{entered_name}',fg='Green')
             except:
-                temp1.config(text=' No such database found(Check the spelling once again)')
+                temp1.config(text=' No such table found(Check the spelling once again)')
 
-    def table_manipulation_Window(x):
+    def table_manipulation_Window(x,names=None):
         global mycon
         curser = mycon.cursor()
         global temp1
         if x == 1:
-            table_executor(1)
+            table_executor(1,names)
             
         elif x == 2:
             add = tk.Toplevel(dtw)
@@ -195,7 +187,7 @@ def table(name):
     button_frame1 = tk.Frame(dtw)
     button_frame1.pack(fill="both", expand=True)
     buten_frame2 = tk.Frame(dtw).pack(side='bottom', fill= 'x' , padx= 10, pady=10)
-    tk.Button(buten_frame2,text='+ Add New Table.',fg='Green',command=lambda:table_manipulation_Window(1)).pack(side='right',padx=5)
+    tk.Button(buten_frame2,text='+ Add New Table.',fg='Green',command=lambda:table_manipulation_Window(1,name)).pack(side='right',padx=5)
     tk.Button(buten_frame2,text='- Remove Table.',fg='Red',command=lambda:table_manipulation_Window(2)).pack(side='right',padx=5)
     if all_tabels == []:
         l.config(text='No table found Create new....',fg='Red')
