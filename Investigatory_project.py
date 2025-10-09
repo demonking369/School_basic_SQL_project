@@ -101,19 +101,49 @@ def Database_executor(x,name):
 
 def build_buttons(student_list):
     global button_frame
+    global n
     for name in student_list:
         btn = tk.Button(button_frame, text=name, width=20,
                         command=lambda n=name: table(n))
+        n = name
         btn.pack(pady=5)
         
+def open_table(name,table):
+    global mycon,table2
+    table2 = table
+    cur = mycon.cursor()
+    columes1=rows()
+    print(columes1)
+    cur.execute(f'use {name};')
+    table2=list[cur.execute(f'select * from {table};') or cur.fetchall()]
+    newroot = tk.Tk()
+    newroot.title(f'Table {table} of Database {name}')
+    root.geometry('800x600')
+    frame = tk.Frame(newroot)
+    frame.pack(fill='both',expand=True)
+    columes1 = ('index',) + columes1
+    tree = ttk.Treeview(frame, columns=columes1, show='headings')
+    tree.pack(side='left', fill='both', expand=True)
+    tree.heading('index', text='index')
+    tree.column('index', width=40, anchor='center')
+    for col in columes1:
+        tree.heading(col, text=col)
+        tree.column(col, width=100, anchor='center')
+    scrolbar = ttk.Scrollbar(frame, orient='vertical', command=tree.yview)
+    tree.configure(yscrollcommand=scrolbar.set)    
+    scrolbar.pack(side='right', fill='y')
+    for i, row in enumerate(table2, start=1):
+        tree.insert('', 'end', values=(i,) + row)
+        
 def table(name):
-    print(name)
     dash.destroy()
-    global mycon
+    global mycon,n
     global bf
     global dtw
     global c
-    def refresh():
+    global database1
+    database1=name
+    def refresh(name):
         dtw.destroy()
         table(name)
     cursor = mycon.cursor()
@@ -124,9 +154,9 @@ def table(name):
         print(n)
     def build_buttons1(s):
         global bf
-        for name in s:
+        for name1 in s:
             btn = tk.Button(bf, text=name, width=20,
-                            command=lambda n=name: on_click1(n))
+                            command=lambda n=name1: open_table(name,n))
             btn.pack(pady=5)
             
     def table_executor(x,name=None):
@@ -178,7 +208,7 @@ def table(name):
     menubar = tk.Menu(dtw)
     filemenu = tk.Menu(menubar,tearoff=0)
     filemenu.add_command(label='Exit',command=dtw.destroy)
-    filemenu.add_command(label='Refresh',command=refresh)
+    filemenu.add_command(label='Refresh',command=lambda:refresh(name))
     filemenu.add_command(label='Back_To_Database',command=database)
     menubar.add_cascade(label='File',menu=filemenu)
     dtw.config(menu=menubar)
@@ -194,16 +224,16 @@ def table(name):
     else:
         build_buttons1(all_tabels)
         
-def rows() -> list: 
+def rows(): 
     global mycon
     cur = mycon.cursor()
-    columns=cur.execute(f"""
+    columns=list[cur.execute(f"""
     SELECT COLUMN_NAME
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = {database1}
       AND TABLE_NAME = {Table1}
     ORDER BY ORDINAL_POSITION;
-        """) or cur.fetchall()
+        """) or cur.fetchall()]
     return columns
 root = tk.Tk()
 root.title('App')
