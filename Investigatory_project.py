@@ -108,23 +108,28 @@ def build_buttons(student_list):
         n = name
         btn.pack(pady=5)
         
-def open_table(name,table):
-    global mycon,table2
+def open_table(name1,table):
+    global mycon,table2,database1,Table1
+    database1=name1
+    Table1 = table 
     table2 = table
     cur = mycon.cursor()
     columes1=rows()
-    print(columes1)
-    cur.execute(f'use {name};')
-    table2=list[cur.execute(f'select * from {table};') or cur.fetchall()]
+    print("Output 116:",columes1)
+    print('Output 117:',name1)
+    print('Output 118:',table)
+    cur.execute(f'use {name1};')
+    table2=(cur.execute(f'select * from {table};') or cur.fetchall())
+    print('Output 122:',table2)
     newroot = tk.Tk()
-    newroot.title(f'Table {table} of Database {name}')
-    root.geometry('800x600')
+    newroot.title(f'Table {table} of Database {name1}')
+    newroot.geometry('800x600')
     frame = tk.Frame(newroot)
     frame.pack(fill='both',expand=True)
-    columes1 = ('index',) + columes1
+    columes1 = ['index',] + columes1
     tree = ttk.Treeview(frame, columns=columes1, show='headings')
     tree.pack(side='left', fill='both', expand=True)
-    tree.heading('index', text='index')
+    tree.heading('index',text='index')
     tree.column('index', width=40, anchor='center')
     for col in columes1:
         tree.heading(col, text=col)
@@ -155,8 +160,8 @@ def table(name):
     def build_buttons1(s):
         global bf
         for name1 in s:
-            btn = tk.Button(bf, text=name, width=20,
-                            command=lambda n=name1: open_table(name,n))
+            btn = tk.Button(bf, text=name1, width=20,
+                            command=lambda n=name1:open_table(database1,n))
             btn.pack(pady=5)
             
     def table_executor(x,name=None):
@@ -227,13 +232,18 @@ def table(name):
 def rows(): 
     global mycon
     cur = mycon.cursor()
-    columns=list[cur.execute(f"""
-    SELECT COLUMN_NAME
-    FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = {database1}
-      AND TABLE_NAME = {Table1}
-    ORDER BY ORDINAL_POSITION;
-        """) or cur.fetchall()]
+    print('Output 233:',database1,Table1)
+    try:
+        columns=list(cur.execute(f"""
+        SELECT COLUMN_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = '{database1}'
+        AND TABLE_NAME = '{Table1}'
+        ORDER BY ORDINAL_POSITION;
+            """) or cur.fetchall())
+        columns = [row[0] for row in columns]
+    except:
+        return ['Some error occured']
     return columns
 root = tk.Tk()
 root.title('App')
