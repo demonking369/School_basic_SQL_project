@@ -17,7 +17,10 @@ def sql_connected(): # Secure login system
     try:
         mycon = sql.connect(host="localhost",user=user1,password=pas)
     except:
-        lable1.config(text='Not Connected!(Wrong Pasword/UserName)',fg='Red')
+       try:
+            mycon = sql.connect(host="localhost",user=user1,password=pas,charset="utf8")
+        except:
+            lable1.config(text='Not Connected!(Wrong Pasword/UserName)',fg='Red')
     if mycon.is_connected() or pas.lower()=='q':
         lable1.config(text='Connected!',fg="Green")
         root.destroy()
@@ -260,3 +263,4 @@ lable1=tk.Label(root,text="")
 lable1.pack(pady=20)
 tk.Button(root,text='Check',command=sql_connected).pack(pady=20)
 root.mainloop()
+
