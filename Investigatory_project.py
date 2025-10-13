@@ -17,7 +17,7 @@ def sql_connected(): # Secure login system
     try:
         mycon = sql.connect(host="localhost",user=user1,password=pas)
     except:
-       try:
+        try:
             mycon = sql.connect(host="localhost",user=user1,password=pas,charset="utf8")
         except:
             lable1.config(text='Not Connected!(Wrong Pasword/UserName)',fg='Red')
@@ -89,16 +89,21 @@ def Database_executor(x,name):
     global temp
     curser = mycon.cursor()
     entered_name=name.get().strip()
+    def refresh():
+        dash.destroy()
+        database()
     if x == 1:
         try:
             curser.execute(f'Create database {entered_name};')
             temp.config(text='New table added successfully Please refresh to see the change in the database',fg='Green')
+            refresh()
         except:
             temp.config(text=' May be name is already taken Please check again and make sure name do not already exist in database.',fg='Red')
     elif x == 2 :
         try:
             curser.execute(f'Drop Database {entered_name}')
             temp.config(text=f'Successfully remove the database:{entered_name}',fg='Green')
+            refresh()
         except:
             temp.config(text=' No such database found(Check the spelling once again)')
 
@@ -112,7 +117,7 @@ def build_buttons(student_list):
         btn.pack(pady=5)
         
 def open_table(name1,table):
-    global mycon,table2,database1,Table1
+    global mycon,table2,database1,Table1,columes1
     database1=name1
     Table1 = table 
     table2 = table
@@ -129,6 +134,10 @@ def open_table(name1,table):
     newroot.geometry('800x600')
     frame = tk.Frame(newroot)
     frame.pack(fill='both',expand=True)
+    frame1 = tk.Frame(newroot)
+    frame1.pack(side='bottom', fill= 'x' , padx= 10, pady=10)
+    tk.Button(frame1,text='Add data:',command=lambda:data_manipulator(1),fg='green').pack(side='right',padx=5)
+    tk.Button(frame1,text='Remove data:',command=lambda:data_manipulator(2),fg='red').pack(side='right',padx=5) 
     columes1 = ['index',] + columes1
     tree = ttk.Treeview(frame, columns=columes1, show='headings')
     tree.pack(side='left', fill='both', expand=True)
@@ -142,7 +151,63 @@ def open_table(name1,table):
     scrolbar.pack(side='right', fill='y')
     for i, row in enumerate(table2, start=1):
         tree.insert('', 'end', values=(i,) + row)
-        
+    def table_refresh():
+        tree.delete(*tree.get_children())
+        new_data = (cur.execute(f'select * from {table};') or cur.fetchall())
+        for i, row in enumerate(new_data, start=1):
+            tree.insert('', 'end', values=(i,) + row)
+    def data_manipulator(x):
+        global mycon,columes1
+        curser = mycon.cursor()
+        if x == 1:
+            add = tk.Toplevel(newroot)
+            add.geometry('600x400')
+            add.title('Adding Data!')
+            entries = []
+            for col in columes1[1:]:
+                tk.Label(add, text=f'Enter {col}:').pack(pady=5)
+                entry = tk.Entry(add)
+                entry.pack(pady=5)
+                entries.append(entry)
+            def add_data():
+                values = [entry.get().strip() for entry in entries]
+                placeholders = ', '.join(['%s'] * len(values))
+                try:
+                    curser.execute(f'INSERT INTO {table} ({", ".join(columes1[1:])}) VALUES ({placeholders})', values)
+                    mycon.commit()
+                    add.destroy()
+                    table_refresh()
+                except Exception as e:
+                    print(f"Error: {e}")
+            tk.Button(add, text='Add Data', fg='Green', command=add_data).pack(pady=20)
+        elif x == 2:
+            global entery
+            add = tk.Toplevel(newroot)
+            add.geometry('600x300')
+            add.title('Removing Data!')
+            tk.Label(add, text='Enter the index of the row to remove:').pack(pady=20)
+            entery = tk.Entry(add)
+            entery.pack(pady=5)
+            def remove_data():
+                global mycon,columes1,entery
+                curser = mycon.cursor()
+                index = entery.get().strip()
+                try:
+                    curser.execute(f'SELECT * FROM {table};')
+                    rows = curser.fetchall()
+                    if 1 <= int(index) <= len(rows):
+                        row_to_delete = rows[int(index) - 1]
+                        conditions = ' AND '.join([f"{col} = %s" for col in columes1[1:]])
+                        curser.execute(f'DELETE FROM {table} WHERE {conditions}', row_to_delete)
+                        mycon.commit()
+                        add.destroy()
+                        table_refresh()
+                    else:
+                        print("Index out of range")
+                except Exception as e:
+                    print(f"Error: {e}")
+            tk.Button(add,text='Remove Data', fg='Red', command=remove_data).pack(pady=5)
+            
 def table(name):
     dash.destroy()
     global mycon,n
@@ -151,15 +216,14 @@ def table(name):
     global c
     global database1
     database1=name
-    def refresh(name):
+    def refresh(table_name=name):
         dtw.destroy()
-        table(name)
+        table(table_name)
     cursor = mycon.cursor()
     cursor.execute(f'use {name};')
     all_tabels = list(cursor.execute("show Tables;") or cursor.fetchall())
     all_tabels = [row[0] for row in all_tabels]
-    def on_click1(n):
-        print(n)
+
     def build_buttons1(s):
         global bf
         for name1 in s:
@@ -178,7 +242,7 @@ def table(name):
                 result = sub.run([sys.executable,'SQL_Creator.py'],capture_output=True,text=True, timeout=300)
                 stderr = result.stdout
                 curser.execute(f'Use {name};')
-                curser.execute(stderr)   # this is the SQL or custom query
+                curser.execute(stderr) # this is the SQL or custom query
             except:
                 print('Some error occured')
         elif x == 2 :
@@ -263,4 +327,3 @@ lable1=tk.Label(root,text="")
 lable1.pack(pady=20)
 tk.Button(root,text='Check',command=sql_connected).pack(pady=20)
 root.mainloop()
-
